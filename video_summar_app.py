@@ -1,3 +1,4 @@
+
 import os
 import cv2
 import streamlit as st
@@ -5,16 +6,19 @@ from pytube import YouTube
 import subprocess
 from langchain_groq import ChatGroq
 
+# Directories
 videos_directory = 'videos/'
 frames_directory = 'frames/'
 os.makedirs(videos_directory, exist_ok=True)
 os.makedirs(frames_directory, exist_ok=True)
 
+# Initialize Groq model
 model = ChatGroq(
     groq_api_key=st.secrets["GROQ_API_KEY"],
     model_name="meta-llama/llama-4-scout-17b-16e-instruct"
 )
 
+# Download YouTube video using yt-dlp
 def download_youtube_video(youtube_url):
     result = subprocess.run(
         [
@@ -36,6 +40,7 @@ def download_youtube_video(youtube_url):
     )
     return os.path.join(videos_directory, downloaded_files[0])
 
+# Extract frames from the video
 def extract_frames(video_path, interval_seconds=5):
     for file in os.listdir(frames_directory):
         os.remove(os.path.join(frames_directory, file))
@@ -61,6 +66,7 @@ def extract_frames(video_path, interval_seconds=5):
 
     video.release()
 
+# Describe video content using Groq
 def describe_video():
     descriptions = []
     for file in sorted(os.listdir(frames_directory)):
@@ -69,19 +75,23 @@ def describe_video():
     prompt = "You are a helpful assistant. Summarize the video based on the following frame filenames:\n" + "\n".join(descriptions)
     return model.invoke(prompt)
 
+# Rewrite summary nicely
 def rewrite_summary(summary):
     prompt = f"Please rewrite this video summary in a polished and easy-to-understand way:\n\n{summary}"
     return model.invoke(prompt)
 
+# Turn summary into a story
 def turn_into_story(summary):
     prompt = f"Turn the following video summary into a narrative story with characters, setting, conflict, and resolution:\n\n{summary}"
     return model.invoke(prompt)
 
+# Streamlit UI
 st.title("📺 PragyanAI - YouTube/Uploaded Video Summarizer Using Groq LLM")
 #st.image("PragyanAI_Transperent.png")
 
 youtube_url = st.text_input("Paste a YouTube video URL:", placeholder="https://www.youtube.com/watch?v=example")
 
+# Handle video input from YouTube URL
 if youtube_url:
     try:
         with st.spinner("Downloading and summarizing video..."):
@@ -98,6 +108,7 @@ if youtube_url:
 
 st.divider()
 
+# Handle uploaded local video
 uploaded_file = st.file_uploader("Or upload a video file:", type=["mp4", "avi", "mov", "mkv"])
 
 if uploaded_file:
@@ -113,6 +124,7 @@ if uploaded_file:
     st.markdown("### 📝 Summary of Uploaded Video:")
     st.markdown(summary)
 
+# Additional buttons to enhance the summary
 if "summary" in st.session_state:
     col1, col2 = st.columns(2)
 
